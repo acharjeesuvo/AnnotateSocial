@@ -5,11 +5,11 @@ import datetime
 
 # DB connection
 PG_CONFIG = {
-    "host": st.secrets["db"]["host"],
-    "port": st.secrets["db"]["port"],
-    "dbname": st.secrets["db"]["dbname"],
-    "user": st.secrets["db"]["user"],
-    "password": st.secrets["db"]["password"]
+     "dbname": st.secrets["dbname"],
+    "user": st.secrets["user"],
+    "password": st.secrets["password"],
+    "host": st.secrets["host"],
+    "port": st.secrets["port"]
 }
 
 def get_db_connection():
@@ -108,4 +108,5 @@ def main():
     conn.close()
 
 if __name__ == "__main__":
+
     main()
