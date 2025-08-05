@@ -66,7 +66,7 @@ def get_progress(user_id):
     cur = conn.cursor()
     cur.execute("SELECT COUNT(*) FROM input_data")
     total = cur.fetchone()[0]
-    cur.execute("SELECT COUNT(*) FROM annotated WHERE user_id = %s", (user_id,))
+    cur.execute("SELECT COUNT(*) FROM annotated")
     done = cur.fetchone()[0]
     cur.close()
     conn.close()
