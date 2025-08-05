@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import streamlit as st
 import pandas as pd
 import psycopg2
@@ -308,4 +307,4 @@ def main():
 
 if __name__ == "__main__":
     main()
->>>>>>> aa2f7b47 (Added images folder)
+
