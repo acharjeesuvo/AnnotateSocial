@@ -41,7 +41,7 @@ def get_next_image(user_id):
         )
         ORDER BY i.image_name
         LIMIT 1
-    """, (user_id,))
+    """)
     row = cur.fetchone()
     cur.close()
     conn.close()
