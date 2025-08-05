@@ -37,7 +37,7 @@ def get_next_image(user_id):
     cur.execute("""
         SELECT i.image_name, i.tweet_text, i.llm_reasoning FROM input_data i
         WHERE i.image_name NOT IN (
-            SELECT image_name FROM annotated WHERE user_id = %s
+            SELECT image_name FROM annotated
         )
         ORDER BY i.image_name
         LIMIT 1
