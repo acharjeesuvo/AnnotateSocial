@@ -40,7 +40,7 @@ def get_next_image(user_id):
             SELECT image_name
             FROM input_data
             WHERE image_name NOT IN (SELECT image_name FROM annotated)
-              AND (locked_by IS NULL OR lock_time < NOW() - INTERVAL '10 minutes')
+              AND (locked_by IS NULL OR lock_time < NOW() - INTERVAL '60 minutes')
             ORDER BY image_name
             LIMIT 1
             FOR UPDATE SKIP LOCKED
