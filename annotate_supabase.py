@@ -36,8 +36,8 @@ def get_next_image(user_id):
     cur = conn.cursor()
     cur.execute("""
     WITH next_image AS (
-        SELECT image_name FROM input_data
-        WHERE image_name NOT IN (SELECT image_name FROM annotated)
+        SELECT i.image_name, i.tweet_text, i.llm_reasoning FROM input_data i
+        WHERE i.image_name NOT IN (SELECT image_name FROM annotated)
         AND (locked_by IS NULL OR lock_time < NOW() - INTERVAL '10 minutes')
         LIMIT 1
         FOR UPDATE SKIP LOCKED
