@@ -35,37 +35,34 @@ def get_next_image(user_id):
     conn = get_db_connection()
     cur = conn.cursor()
 
-    # Start transaction
-    conn.autocommit = False
-
-    # Select and lock one row
+    # Step 1: Select the next available image not annotated by the user, and not locked by others
     cur.execute("""
-        SELECT image_name, tweet_text, llm_reasoning
-        FROM input_data
-        WHERE image_name NOT IN (SELECT image_name FROM annotated)
-        AND (locked_by IS NULL OR lock_time < NOW() - INTERVAL '10 minutes')
-        FOR UPDATE SKIP LOCKED
+        SELECT i.image_name, i.tweet_text, i.llm_reasoning
+        FROM input_data i
+        WHERE i.image_name NOT IN (
+            SELECT image_name FROM annotated WHERE user_id = %s
+        )
+        AND (i.locked_by IS NULL OR i.lock_time < NOW() - INTERVAL '10 minutes')
+        ORDER BY i.image_name
         LIMIT 1
-    """)
+        FOR UPDATE SKIP LOCKED
+    """, (user_id,))
 
     row = cur.fetchone()
 
+    # Step 2: If found, lock the row by updating locked_by and lock_time
     if row:
         image_name = row[0]
-        # Update the lock info
         cur.execute("""
             UPDATE input_data
             SET locked_by = %s, lock_time = NOW()
             WHERE image_name = %s
         """, (user_id, image_name))
         conn.commit()
-        cur.close()
-        conn.close()
-        return row
-    else:
-        cur.close()
-        conn.close()
-        return None
+
+    cur.close()
+    conn.close()
+    return row
 
 
 # Save annotation
