@@ -40,7 +40,7 @@ def get_next_image(user_id):
         SELECT i.image_name, i.tweet_text, i.llm_reasoning
         FROM input_data i
         WHERE i.image_name NOT IN (
-            SELECT image_name FROM annotated WHERE user_id = %s
+            SELECT image_name FROM annotated 
         )
         AND (i.locked_by IS NULL OR i.lock_time < NOW() - INTERVAL '10 minutes')
         ORDER BY i.image_name
