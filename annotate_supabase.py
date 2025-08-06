@@ -34,7 +34,7 @@ def log_login_time(user_id):
 def get_next_image(user_id):
     conn = get_db_connection()
     cur = conn.cursor()
-   cur.execute("""
+    cur.execute("""
     WITH next_image AS (
         SELECT image_name FROM input_data
         WHERE image_name NOT IN (SELECT image_name FROM annotated)
