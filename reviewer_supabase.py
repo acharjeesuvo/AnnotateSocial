@@ -74,7 +74,7 @@ def main():
     if row:
         image_name, tweet_text, llm_reasoning, evidence, reasoning, naturalness, contributor_id, accept_status = row
 
-        st.image(f"images/{image_name}", width=400)
+        st.image(f"image_name", width=400)
         st.markdown(f"**Tweet Text:** {tweet_text}")
         st.markdown(f"**LLM Reasoning:** {llm_reasoning}")
         st.markdown(f"**Evidence Score:** {evidence}")
@@ -115,4 +115,5 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
