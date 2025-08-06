@@ -60,10 +60,15 @@ def main():
     cur = conn.cursor()
 
     cur.execute("""
-        SELECT * FROM annotated
-        WHERE image_name NOT IN (SELECT image_name FROM reviewed)
-        LIMIT 1
-    """)
+         SELECT * FROM annotated
+         WHERE image_name NOT IN (SELECT image_name FROM reviewed)
+         AND NOT (
+             (user_id = 'a4' AND %s = 'a7') OR
+             (user_id = 'a5' AND %s = 'a8')
+         )
+         ORDER BY image_name
+         LIMIT 1
+     """, (reviewer_id, reviewer_id))
     row = cur.fetchone()
 
     if row:
@@ -110,3 +115,4 @@ def main():
 if __name__ == "__main__":
 
     main()
+
