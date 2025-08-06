@@ -34,23 +34,29 @@ def log_login_time(user_id):
 def get_next_image(user_id):
     conn = get_db_connection()
     cur = conn.cursor()
+
     cur.execute("""
-    WITH next_image AS (
-        SELECT i.image_name, i.tweet_text, i.llm_reasoning FROM input_data i
-        WHERE i.image_name NOT IN (SELECT image_name FROM annotated)
-        AND (locked_by IS NULL OR lock_time < NOW() - INTERVAL '10 minutes')
-        LIMIT 1
-        FOR UPDATE SKIP LOCKED
-    )
-    UPDATE input_data
-    SET locked_by = %s, lock_time = NOW()
-    WHERE image_name = (SELECT image_name FROM next_image.image_name)
-    
+        WITH next_image AS (
+            SELECT image_name
+            FROM input_data
+            WHERE image_name NOT IN (SELECT image_name FROM annotated)
+              AND (locked_by IS NULL OR lock_time < NOW() - INTERVAL '10 minutes')
+            ORDER BY image_name
+            LIMIT 1
+            FOR UPDATE SKIP LOCKED
+        )
+        UPDATE input_data
+        SET locked_by = %s,
+            lock_time = NOW()
+        WHERE image_name = (SELECT image_name FROM next_image)
+        RETURNING image_name, tweet_text, llm_reasoning
     """, (user_id,))
+
     row = cur.fetchone()
     cur.close()
     conn.close()
     return row
+
 
 # Save annotation
 def save_annotation(user_id, image_name, evidence, reasoning, naturalness, accept_status):
