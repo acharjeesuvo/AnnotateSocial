@@ -46,7 +46,7 @@ def get_next_image(user_id):
     SET locked_by = %s, lock_time = NOW()
     WHERE image_name = (SELECT image_name FROM next_image.image_name)
     
-""", (user_id,))
+    """, (user_id,))
     row = cur.fetchone()
     cur.close()
     conn.close()
