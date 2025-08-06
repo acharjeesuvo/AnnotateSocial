@@ -35,7 +35,7 @@ def get_next_image(user_id):
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute("""
-    WITH next_image AS (
+    WITH next_image, t_t, llm_reason AS (
         SELECT i.image_name, i.tweet_text, i.llm_reasoning FROM input_data i
         WHERE i.image_name NOT IN (SELECT image_name FROM annotated)
         AND (locked_by IS NULL OR lock_time < NOW() - INTERVAL '10 minutes')
@@ -44,8 +44,8 @@ def get_next_image(user_id):
     )
     UPDATE input_data
     SET locked_by = %s, lock_time = NOW()
-    WHERE image_name = (SELECT image_name FROM next_image)
-    RETURNING image_name
+    WHERE image_name = (SELECT image_name FROM next_image.image_name)
+    
 """, (st.session_state.user_id,))
     row = cur.fetchone()
     cur.close()
