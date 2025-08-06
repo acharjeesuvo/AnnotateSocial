@@ -94,7 +94,18 @@ def get_progress(user_id):
     cur.close()
     conn.close()
     return done, total
-
+# Remove Lock from images    
+def release_locks(user_id):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        UPDATE input_data
+        SET locked_by = NULL, lock_time = NULL
+        WHERE locked_by = %s
+    """, (user_id,))
+    conn.commit()
+    cur.close()
+    conn.close()
 # Login UI
 def login_ui():
     st.title("🔐 Login to Annotation Tool")
@@ -139,6 +150,7 @@ def main():
     st.sidebar.title("👤 Annotator Panel")
     st.sidebar.write(f"User: `{user_id}`")
     if st.sidebar.button("🔓 Logout"):
+        release_locks(user_id)
         st.session_state.clear()
         st.rerun()
 
