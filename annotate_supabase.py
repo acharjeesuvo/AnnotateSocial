@@ -158,12 +158,13 @@ def main():
     st.sidebar.markdown(f"**Progress:** {done} / {total}")
     st.sidebar.progress(done / total if total > 0 else 0)
 
-    if "current_image" not in st.session_state:
+    if "current_image" not in st.session_state or st.session_state.get("fetch_new_image", False):
         row = get_next_image(user_id)
         if not row:
             review_mode()
             return
         st.session_state.current_image = row  # Store the row for this annotation
+        st.session_state["fetch_new_image"] = False
 
     # Load the stored row
     image_name, tweet_text, llm_reasoning = st.session_state.current_image
@@ -186,6 +187,8 @@ def main():
     if st.button("✅ Submit Annotation"):
         save_annotation(user_id, image_name, evidence, reasoning, naturalness, accept_status)
         st.success("Annotation submitted!")
+        st.session_state.pop("current_image", None)
+        st.session_state["fetch_new_image"] = True  
         st.rerun()
 
 if __name__ == "__main__":
