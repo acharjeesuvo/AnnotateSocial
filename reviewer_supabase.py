@@ -34,15 +34,24 @@ def get_next_review(reviewer_id):
     cur = conn.cursor()
     cur.execute("""
         WITH next_item AS (
-            SELECT image_name, tweet_text, llm_reasoning, evidence_recognition, reasoning_chain, text_naturalness, user_id, accept_status
-            FROM annotated
-            WHERE image_name NOT IN (SELECT image_name FROM reviewed)
-            AND NOT (
-                (user_id = 'a4' AND %s = 'a7') OR
-                (user_id = 'a5' AND %s = 'a8')
-            )
-            AND (locked_by_reviewer IS NULL OR lock_time_reviewer < NOW() - INTERVAL '10 minutes')
-            ORDER BY image_name
+            SELECT a.image_name, 
+                   i.tweet_text, 
+                   i.llm_reasoning, 
+                   a.evidence_recognition, 
+                   a.reasoning_chain, 
+                   a.text_naturalness, 
+                   a.user_id, 
+                   a.accept_status
+            FROM annotated a
+            JOIN input_data i ON a.image_name = i.image_name
+            WHERE a.image_name NOT IN (SELECT image_name FROM reviewed)
+                   AND NOT (
+                       (a.user_id = 'a4' AND %s = 'a7') OR
+                       (a.user_id = 'a5' AND %s = 'a8')
+                   )
+                   AND (a.locked_by_reviewer IS NULL 
+                       OR a.lock_time_reviewer < NOW() - INTERVAL '10 minutes')
+            ORDER BY a.image_name
             LIMIT 1
         )
         UPDATE annotated a
@@ -161,3 +170,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
