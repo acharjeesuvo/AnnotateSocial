@@ -187,17 +187,19 @@ def main():
         ["Yes", "No"],
         key="accept_choice"
     )
+
     # Determine accept_status
     accept_status = 1 if st.session_state.accept_choice == "Yes" else 0
+
     # Show comment box only if rejected
-    if accept_status == 0:  # Reasoning NOT accepted
-    st.text_area(
-        "📝 Comment for Reviewer",
-        height=100,
-        key="annotator_comment"
-    )
+    if accept_status == 0:
+        st.text_area(
+            "📝 Comment for Reviewer",
+            height=100,
+            key="annotator_comment"
+        )
     else:
-        st.session_state.annotator_comment = ""  # Reset when accepted
+        st.session_state["annotator_comment"] = ""  # Reset when accepted
     if st.button("✅ Submit Annotation"):
         save_annotation(user_id, image_name, evidence, reasoning, naturalness, accept_status, annotator_comment)
         st.success("Annotation submitted!")
