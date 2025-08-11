@@ -144,7 +144,7 @@ def main():
             return
 
     row = st.session_state["current_review"]
-    image_name, tweet_text, llm_reasoning, evidence, reasoning, naturalness, contributor_id, accept_status = row
+    image_name, tweet_text, llm_reasoning, evidence, reasoning, naturalness, contributor_id, accept_status, , annotator_comment = row
     done, total = get_reviewer_progress(reviewer_id)
     st.sidebar.markdown(f"**Progress:** {done} / {total}")
     st.sidebar.progress(done / total if total > 0 else 0)
@@ -200,6 +200,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
