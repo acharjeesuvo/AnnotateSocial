@@ -5,7 +5,7 @@ import datetime
 
 # DB connection
 PG_CONFIG = {
-     "dbname": st.secrets["dbname"],
+    "dbname": st.secrets["dbname"],
     "user": st.secrets["user"],
     "password": st.secrets["password"],
     "host": st.secrets["host"],
@@ -14,6 +14,47 @@ PG_CONFIG = {
 
 def get_db_connection():
     return psycopg2.connect(**PG_CONFIG)
+
+# Release any locks held by a reviewer
+def release_locks(reviewer_id):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        UPDATE annotated
+        SET locked_by_reviewer = NULL, lock_time_reviewer = NULL
+        WHERE locked_by_reviewer = %s
+    """, (reviewer_id,))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+# Fetch the next available annotation to review with lock
+def get_next_review(reviewer_id):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        WITH next_item AS (
+            SELECT image_name, tweet_text, llm_reasoning, evidence_recognition, reasoning_chain, text_naturalness, user_id, accept_status
+            FROM annotated
+            WHERE image_name NOT IN (SELECT image_name FROM reviewed)
+            AND NOT (
+                (user_id = 'a4' AND %s = 'a7') OR
+                (user_id = 'a5' AND %s = 'a8')
+            )
+            AND (locked_by_reviewer IS NULL OR lock_time_reviewer < NOW() - INTERVAL '10 minutes')
+            ORDER BY image_name
+            LIMIT 1
+        )
+        UPDATE annotated a
+        SET locked_by_reviewer = %s, lock_time_reviewer = NOW()
+        FROM next_item ni
+        WHERE a.image_name = ni.image_name
+        RETURNING ni.image_name, ni.tweet_text, ni.llm_reasoning, ni.evidence_recognition, ni.reasoning_chain, ni.text_naturalness, ni.user_id, ni.accept_status;
+    """, (reviewer_id, reviewer_id, reviewer_id))
+    row = cur.fetchone()
+    cur.close()
+    conn.close()
+    return row
 
 def login_ui():
     st.title("🔐 Reviewer Login")
@@ -48,72 +89,75 @@ def main():
         login_ui()
         return
 
-    st.sidebar.title("👤 Reviewer Panel")
     reviewer_id = st.session_state['user_id']
+    st.sidebar.title("👤 Reviewer Panel")
     st.sidebar.write(f"Logged in as: `{reviewer_id}`")
+
     if st.sidebar.button("🔓 Logout"):
+        release_locks(reviewer_id)
         st.session_state.clear()
         st.rerun()
 
-    st.title("CrisisMMD Annotation Reviewer Tool")
-    conn = get_db_connection()
-    cur = conn.cursor()
-
-    cur.execute("""
-         SELECT * FROM annotated
-         WHERE image_name NOT IN (SELECT image_name FROM reviewed)
-         AND NOT (
-             (user_id = 'a4' AND %s = 'a7') OR
-             (user_id = 'a5' AND %s = 'a8')
-         )
-         ORDER BY image_name
-         LIMIT 1
-     """, (reviewer_id, reviewer_id))
-    row = cur.fetchone()
-
-    if row:
-        image_name, tweet_text, llm_reasoning, evidence, reasoning, naturalness, contributor_id, accept_status = row
-
-        st.image(f"image_name", width=400)
-        st.markdown(f"**Tweet Text:** {tweet_text}")
-        st.markdown(f"**LLM Reasoning:** {llm_reasoning}")
-        st.markdown(f"**Evidence Score:** {evidence}")
-        st.markdown(f"**Reasoning Score:** {reasoning}")
-        st.markdown(f"**Naturalness Score:** {naturalness}")
-
-        st.markdown("### Reviewer Evaluation")
-
-        if accept_status == 1:
-            reviewer_agree = st.radio("Do you agree this needed no correction?", ["Yes (1 pt)", "No (0 pt)"])
-            reviewer_score = 1 if "Yes" in reviewer_agree else 0
+    # Get or keep the current locked review
+    if "current_review" not in st.session_state:
+        row = get_next_review(reviewer_id)
+        if row:
+            st.session_state["current_review"] = row
         else:
-            reviewer_score = st.slider("Rate the quality of contributor's revision (1 to 5)", 1, 5, 3)
+            st.info("No more annotations left to review.")
+            return
 
-        final_reasoning = st.text_area("Final Reasoning Output", height=150)
+    row = st.session_state["current_review"]
+    image_name, tweet_text, llm_reasoning, evidence, reasoning, naturalness, contributor_id, accept_status = row
 
-        if st.button("Submit Review"):
-            cur.execute("""
-                INSERT INTO reviewed (image_name, reviewer_id, reviewer_score, final_reasoning, review_time)
-                VALUES (%s, %s, %s, %s, %s)
-            """, (image_name, reviewer_id, reviewer_score, final_reasoning, datetime.datetime.now()))
-            conn.commit()
+    st.title("CrisisMMD Annotation Reviewer Tool")
+    st.image(f"{image_name}", width=400)
+    st.markdown(f"**Tweet Text:** {tweet_text}")
+    st.markdown(f"**LLM Reasoning:** {llm_reasoning}")
+    st.markdown(f"**Evidence Score:** {evidence}")
+    st.markdown(f"**Reasoning Score:** {reasoning}")
+    st.markdown(f"**Naturalness Score:** {naturalness}")
 
-            if (accept_status == 1 and reviewer_score == 0) or (accept_status == 0 and reviewer_score < 4):
-                cur.execute("DELETE FROM annotated WHERE image_name = %s", (image_name,))
-                conn.commit()
-                st.warning("Rejected entry. It will go back for re-annotation.")
-            else:
-                st.success("Review saved. Entry approved.")
-
-            st.rerun()
+    st.markdown("### Reviewer Evaluation")
+    if accept_status == 1:
+        reviewer_agree = st.radio("Do you agree this needed no correction?", ["Yes (1 pt)", "No (0 pt)"])
+        reviewer_score = 1 if "Yes" in reviewer_agree else 0
     else:
-        st.info("No more annotations left to review.")
+        reviewer_score = st.slider("Rate the quality of contributor's revision (1 to 5)", 1, 5, 3)
 
-    cur.close()
-    conn.close()
+    final_reasoning = st.text_area("Final Reasoning Output", height=150)
+
+    if st.button("✅ Submit Review"):
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO reviewed (image_name, reviewer_id, reviewer_score, final_reasoning, review_time)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (image_name, reviewer_id, reviewer_score, final_reasoning, datetime.datetime.now()))
+        conn.commit()
+
+        # Release lock
+        cur.execute("""
+            UPDATE annotated
+            SET locked_by_reviewer = NULL, lock_time_reviewer = NULL
+            WHERE image_name = %s
+        """, (image_name,))
+        conn.commit()
+
+        # If rejected, delete from annotated
+        if (accept_status == 1 and reviewer_score == 0) or (accept_status == 0 and reviewer_score < 4):
+            cur.execute("DELETE FROM annotated WHERE image_name = %s", (image_name,))
+            conn.commit()
+            st.warning("Rejected entry. It will go back for re-annotation.")
+        else:
+            st.success("Review saved. Entry approved.")
+
+        cur.close()
+        conn.close()
+
+        # Move to next image
+        del st.session_state["current_review"]
+        st.rerun()
 
 if __name__ == "__main__":
-
     main()
-
-
