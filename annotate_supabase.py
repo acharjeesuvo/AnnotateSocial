@@ -158,12 +158,15 @@ def main():
     st.sidebar.markdown(f"**Progress:** {done} / {total}")
     st.sidebar.progress(done / total if total > 0 else 0)
 
-    row = get_next_image(user_id)
-    if not row:
-        review_mode()
-        return
+    if "current_image" not in st.session_state:
+        row = get_next_image(user_id)
+        if not row:
+            review_mode()
+            return
+        st.session_state.current_image = row  # Store the row for this annotation
 
-    image_name, tweet_text, llm_reasoning = row
+    # Load the stored row
+    image_name, tweet_text, llm_reasoning = st.session_state.current_image
     st.header("🖼️ Image Annotation")
     image_path = f"{image_name}"
     try:
