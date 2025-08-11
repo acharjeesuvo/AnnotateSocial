@@ -92,7 +92,33 @@ def login_ui():
         else:
             st.error("❌ User ID not found.")
         st.stop()
-
+def get_reviewer_progress(reviewer_id):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # Count completed reviews
+    cur.execute("""
+        SELECT COUNT(*) 
+        FROM reviewed 
+        WHERE reviewer_id = %s
+    """, (reviewer_id,))
+    done = cur.fetchone()[0]
+    
+    # Count total annotations they are eligible to review
+    cur.execute("""
+        SELECT COUNT(*) 
+        FROM annotated a
+        WHERE a.image_name NOT IN (SELECT image_name FROM reviewed)
+          AND NOT (
+              (a.user_id = 'a4' AND %s = 'a7') OR
+              (a.user_id = 'a5' AND %s = 'a8')
+          )
+    """, (reviewer_id, reviewer_id))
+    total = cur.fetchone()[0]
+    
+    cur.close()
+    conn.close()
+    return done, done + total  # done + remaining = total
 def main():
     if "user_id" not in st.session_state:
         login_ui()
@@ -118,7 +144,9 @@ def main():
 
     row = st.session_state["current_review"]
     image_name, tweet_text, llm_reasoning, evidence, reasoning, naturalness, contributor_id, accept_status = row
-
+    done, total = get_reviewer_progress(reviewer_id)
+    st.sidebar.markdown(f"**Progress:** {done} / {total}")
+    st.sidebar.progress(done / total if total > 0 else 0)
     st.title("CrisisMMD Annotation Reviewer Tool")
     st.image(f"{image_name}", width=400)
     st.markdown(f"**Tweet Text:** {tweet_text}")
@@ -170,4 +198,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
