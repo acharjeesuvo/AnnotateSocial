@@ -41,7 +41,8 @@ def get_next_review(reviewer_id):
                    a.reasoning_chain, 
                    a.text_naturalness, 
                    a.user_id, 
-                   a.accept_status
+                   a.accept_status,
+                   a.annotator_comment
             FROM annotated a
             JOIN input_data i ON a.image_name = i.image_name
             WHERE a.image_name NOT IN (SELECT image_name FROM reviewed)
@@ -154,6 +155,7 @@ def main():
     st.markdown(f"**Evidence Score:** {evidence}")
     st.markdown(f"**Reasoning Score:** {reasoning}")
     st.markdown(f"**Naturalness Score:** {naturalness}")
+    st.markdown(f"**Annotator Comment:** {annotator_comment if annotator_comment else 'No Comment'}")
 
     st.markdown("### Reviewer Evaluation")
     if accept_status == 1:
@@ -198,5 +200,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
