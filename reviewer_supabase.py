@@ -59,7 +59,7 @@ def get_next_review(reviewer_id):
         SET locked_by_reviewer = %s, lock_time_reviewer = NOW()
         FROM next_item ni
         WHERE a.image_name = ni.image_name
-        RETURNING ni.image_name, ni.tweet_text, ni.llm_reasoning, ni.evidence_recognition, ni.reasoning_chain, ni.text_naturalness, ni.user_id, ni.accept_status;
+        RETURNING ni.image_name, ni.tweet_text, ni.llm_reasoning, ni.evidence_recognition, ni.reasoning_chain, ni.text_naturalness, ni.user_id, ni.accept_status, ni.annotator_comment;
     """, (reviewer_id, reviewer_id, reviewer_id))
     row = cur.fetchone()
     cur.close()
@@ -200,6 +200,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
