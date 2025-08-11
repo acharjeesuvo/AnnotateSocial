@@ -155,6 +155,7 @@ def main():
     st.markdown(f"**Evidence Score:** {evidence}")
     st.markdown(f"**Reasoning Score:** {reasoning}")
     st.markdown(f"**Naturalness Score:** {naturalness}")
+    st.markdown(f"**Accept Status of LLM Reasoning?:** {'Accepted' if accept_status else 'Rejected'}")
     st.markdown(f"**Annotator Comment:** {annotator_comment if annotator_comment else 'No Comment'}")
 
     st.markdown("### Reviewer Evaluation")
@@ -200,6 +201,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
