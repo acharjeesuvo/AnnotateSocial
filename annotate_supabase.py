@@ -143,8 +143,9 @@ def main():
     if "logged_in" not in st.session_state or not st.session_state.logged_in:
         login_ui()
         return  # Prevent further code from running if not logged in
-
-
+    
+    if "annotator_comment" not in st.session_state:
+        st.session_state["annotator_comment"] = ""
 
     user_id = st.session_state.user_id
     st.sidebar.title("👤 Annotator Panel")
