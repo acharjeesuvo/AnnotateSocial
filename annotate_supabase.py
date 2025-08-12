@@ -66,7 +66,7 @@ def get_next_image(user_id):
 
 
 # Save annotation
-def save_annotation(user_id, image_name, evidence, reasoning, naturalness, accept_status):
+def save_annotation(user_id, image_name, evidence, reasoning, naturalness, accept_status, annotator_comment):
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute("DELETE FROM annotated WHERE user_id = %s AND image_name = %s", (user_id, image_name))
