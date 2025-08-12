@@ -202,6 +202,7 @@ def main():
     else:
         st.session_state["annotator_comment"] = ""  # Reset when accepted
     if st.button("✅ Submit Annotation"):
+        annotator_comment = st.session_state["annotator_comment"]
         save_annotation(user_id, image_name, evidence, reasoning, naturalness, accept_status, annotator_comment)
         st.success("Annotation submitted!")
         st.session_state.pop("current_image", None)
